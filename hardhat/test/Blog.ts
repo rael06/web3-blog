@@ -13,7 +13,7 @@ describe("Blog", function () {
 
     const Blog = await hre.ethers.getContractFactory("Blog");
 
-    const blog = await Blog.deploy("My Blog");
+    const blog = await Blog.deploy("My testing Web3 Blog");
     return { blog, owner, otherAccount };
   }
 
