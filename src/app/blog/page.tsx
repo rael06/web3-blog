@@ -1,5 +1,5 @@
+import Link from "next/link";
 import { fetchPosts } from "../api/blog";
-import { Post } from "../components/Post";
 
 export default async function Page() {
   // await createPost("Title 2", "Content 2");
@@ -7,10 +7,17 @@ export default async function Page() {
   const posts = await fetchPosts();
 
   return (
-    <ul>
-      {posts.map((post) => (
-        <Post key={post.id} post={post} />
-      ))}
-    </ul>
+    <div>
+      <Link href="/create-post">CreatePost</Link>
+      <ul>
+        {posts.map((post) => (
+          <div key={post.id}>
+            <p>
+              {post.id.padStart(3, "0")}: {post.title}
+            </p>
+          </div>
+        ))}
+      </ul>
+    </div>
   );
 }
