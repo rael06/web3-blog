@@ -1,3 +1,5 @@
+"use server";
+
 import { ethers } from "ethers";
 import { PostModel } from "../models/post";
 import { envVars } from "../services/envVars";
@@ -12,7 +14,7 @@ export async function fetchPosts(): Promise<PostModel[]> {
     provider
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // TODO: validate
   const posts = (await contract.fetchPosts()).map((post: any) => ({
     id: post.id.toString(),
     title: post.title,
@@ -33,11 +35,28 @@ export async function createPost(title: string, content: string) {
   );
 
   const tx = await contract.createPost(title, content);
-
-  // Wait for the transaction to be mined
-  console.log("Waiting for transaction confirmation...");
   const receipt = await tx.wait();
-  console.log(`Transaction confirmed!`, JSON.stringify(receipt, null, 2));
+
+  const eventFragment = contract.interface.getEvent("PostCreated");
+
+  const eventLogs = receipt.logs
+    .map((log: any) => {
+      try {
+        return contract.interface.parseLog(log);
+      } catch {
+        throw new Error("Failed to parse log");
+      }
+    })
+    .filter((log: any) => log && log.name === eventFragment?.name);
+
+  if (eventLogs.length > 0) {
+    const postId = eventLogs[0].args.id.toString();
+    console.log("New post created with ID:", postId);
+    return { id: postId, txHash: receipt.transactionHash };
+  } else {
+    console.log("PostCreated event not found in transaction logs.");
+    throw new Error("PostCreated event not found in transaction logs.");
+  }
 }
 
 export async function updatePost(

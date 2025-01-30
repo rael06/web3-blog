@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchPosts } from "../api/blog";
+import { fetchPosts } from "../../api/blog";
 
 export default async function Page() {
   // await createPost("Title 2", "Content 2");
