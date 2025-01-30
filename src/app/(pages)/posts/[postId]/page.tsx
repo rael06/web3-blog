@@ -1,3 +1,6 @@
-export default function Page({ params }: { params: { postId: string } }) {
-  return <div>Post: {params.postId}</div>;
+type Props = { params: Promise<{ postId: string }> };
+
+export default async function Page({ params }: Props) {
+  const { postId } = await params;
+  return <div>Post: {postId}</div>;
 }

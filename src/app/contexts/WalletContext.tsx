@@ -5,6 +5,7 @@ import { createContext, PropsWithChildren, useContext, useState } from "react";
 
 type WalletContextType = {
   account: string | null;
+  provider: ethers.BrowserProvider | null;
   disconnect: () => void;
   connect: () => void;
 };
@@ -13,7 +14,7 @@ const WalletContext = createContext<WalletContextType | null>(null);
 
 export default function WalletContextProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<string | null>(null);
-  const [, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
 
   const disconnect = () => {
     setAccount(null);
@@ -25,6 +26,7 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
+        setProvider(provider);
         setAccount(accounts[0]);
       } catch (error) {
         console.error("Error connecting to MetaMask:", error);
@@ -35,7 +37,7 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
   };
 
   return (
-    <WalletContext.Provider value={{ account, disconnect, connect }}>
+    <WalletContext.Provider value={{ account, provider, disconnect, connect }}>
       {children}
     </WalletContext.Provider>
   );

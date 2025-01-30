@@ -12,9 +12,9 @@ export default async function Page() {
       <ul>
         {posts.map((post) => (
           <div key={post.id}>
-            <p>
-              {post.id.padStart(3, "0")}: {post.title}
-            </p>
+            <Link href={`/posts/${post.id}`}>
+              {post.id.padStart(3, "0")}: {post.title}, content: {post.content}
+            </Link>
           </div>
         ))}
       </ul>

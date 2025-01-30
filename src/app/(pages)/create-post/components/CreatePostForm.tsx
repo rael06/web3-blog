@@ -1,18 +1,71 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useWalletContext } from "../../../contexts/WalletContext";
-import { createPost } from "@/app/api/blog";
+import { useWalletContext } from "@/app/contexts/WalletContext";
 import { useRouter } from "next/navigation";
+import { ethers } from "ethers";
+import { blogAbi } from "@/app/services/contract";
+
+import { createHelia } from "helia";
+import { unixfs } from "@helia/unixfs";
+
+const helia = await createHelia();
+const ipfs = unixfs(helia);
+
+async function savePostToIPFS(title: string, content: string) {
+  // Upload the content to IPFS via Filebase
+  const file = new TextEncoder().encode(JSON.stringify({ title, content }));
+  const cid = await ipfs.addBytes(file);
+
+  return cid.toString();
+}
+
+export async function createPost({
+  contractAddress,
+  provider,
+  data: { title, content },
+}: {
+  contractAddress: string;
+  provider: ethers.BrowserProvider;
+  data: { title: string; content: string };
+}) {
+  const signer = await provider.getSigner();
+
+  const contract = new ethers.Contract(contractAddress, blogAbi, signer);
+
+  const tx = await contract.createPost(title, content);
+  const receipt = await tx.wait();
+
+  const eventFragment = contract.interface.getEvent("PostCreated");
+
+  const eventLogs = receipt.logs
+    .map((log: any) => {
+      try {
+        return contract.interface.parseLog(log);
+      } catch {
+        throw new Error("Failed to parse log");
+      }
+    })
+    .filter((log: any) => log && log.name === eventFragment?.name);
+
+  if (eventLogs.length > 0) {
+    const postId = eventLogs[0].args.id.toString();
+    console.log("New post created with ID:", postId);
+    return { id: postId, txHash: receipt.transactionHash };
+  } else {
+    console.log("PostCreated event not found in transaction logs.");
+    throw new Error("PostCreated event not found in transaction logs.");
+  }
+}
 
 export default function CreatePostForm() {
-  const { account, connect } = useWalletContext();
+  const { account, provider, connect } = useWalletContext();
   const titleRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (!account) {
+    if (!account || !provider) {
       connect();
     }
   });
@@ -23,22 +76,41 @@ export default function CreatePostForm() {
     const title = titleRef.current?.value;
     const content = contentRef.current?.value;
     if (!title || !content) {
+      // Todo: show error
       console.log("not valid");
       return;
     }
 
-    console.log("submit", title, content);
-    const { id } = await createPost(title, content);
-    router.push(`/posts/${id}`);
+    if (!provider) {
+      // Todo: show error
+      console.log("not connected");
+      return;
+    }
+
+    const ipfsHash = await savePostToIPFS(title, content);
+
+    await createPost({
+      contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
+      provider,
+      data: { title, content: ipfsHash },
+    });
+    router.push(`/posts`);
   };
 
   return (
     <div>
-      <input type="text" placeholder="Title" ref={titleRef} />
-      <input type="text" placeholder="Content" ref={contentRef} />
-      <button type="submit" onClick={submit}>
-        Create Post
-      </button>
+      {account && provider && (
+        <>
+          <input type="text" placeholder="Title" ref={titleRef} />
+          <input type="text" placeholder="Content" ref={contentRef} />
+          <button type="submit" onClick={submit}>
+            Create Post
+          </button>
+        </>
+      )}
+      {(!account || !provider) && (
+        <button onClick={connect}>Connect Wallet</button>
+      )}
     </div>
   );
 }
