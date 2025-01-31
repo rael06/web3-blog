@@ -5,20 +5,7 @@ import { useWalletContext } from "@/app/contexts/WalletContext";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { blogAbi } from "@/app/services/contract";
-
-import { createHelia } from "helia";
-import { unixfs } from "@helia/unixfs";
-
-const helia = await createHelia();
-const ipfs = unixfs(helia);
-
-async function savePostToIPFS(title: string, content: string) {
-  // Upload the content to IPFS via Filebase
-  const file = new TextEncoder().encode(JSON.stringify({ title, content }));
-  const cid = await ipfs.addBytes(file);
-
-  return cid.toString();
-}
+import { addData } from "@/app/api/ipfs";
 
 export async function createPost({
   contractAddress,
@@ -87,7 +74,9 @@ export default function CreatePostForm() {
       return;
     }
 
-    const ipfsHash = await savePostToIPFS(title, content);
+    const data = { title, content };
+
+    const ipfsHash = await addData(data);
 
     await createPost({
       contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
