@@ -6,14 +6,14 @@ import {
   contractPostModelSchema,
   postModelContentSchema,
 } from "@/app/models/post";
-import { envVars } from "@/app/services/envVars";
+import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { blogAbi } from "@/app/services/contract";
 import { getData } from "./ipfs";
 
 export async function fetchPosts(): Promise<PostModel[]> {
-  const provider = new ethers.JsonRpcProvider(envVars.BLOCKCHAIN_RPC_URL);
+  const provider = new ethers.JsonRpcProvider(serverEnvVars.BLOCKCHAIN_RPC_URL);
   const contract = new ethers.Contract(
-    envVars.BLOG_CONTRACT_ADDRESS,
+    serverEnvVars.BLOG_CONTRACT_ADDRESS,
     blogAbi,
     provider
   );
@@ -41,7 +41,10 @@ export async function fetchPosts(): Promise<PostModel[]> {
       posts.push({
         id: post.id.toString(),
         title: post.title,
-        content: parsedContent.data,
+        content: {
+          ...parsedContent.data,
+          cid: post.content,
+        },
         isPublished: post.isPublished,
       });
   }

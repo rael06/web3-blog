@@ -1,4 +1,4 @@
-import { envVars } from "@/app/services/envVars";
+import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
           { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value: envVars.CORS_ORIGIN,
+            value: serverEnvVars.CORS_ORIGIN,
           },
           {
             key: "Access-Control-Allow-Methods",

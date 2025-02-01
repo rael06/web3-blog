@@ -5,9 +5,9 @@ import { useWalletContext } from "@/app/contexts/WalletContext";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { blogAbi } from "@/app/services/contract";
-import { addData } from "@/app/api/ipfs";
+import { z } from "zod";
 
-export async function createPost({
+export async function createPostOnChain({
   contractAddress,
   provider,
   data: { title, body },
@@ -76,9 +76,29 @@ export default function CreatePostForm() {
 
     const data = { title, body };
 
-    const ipfsHash = await addData(data);
+    const response = await fetch(`/api/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-    await createPost({
+    if (!response.ok) {
+      throw new Error("Failed to upload post on IPFS");
+    }
+
+    const responseBody = await response.json();
+    const parsedResponseBody = z
+      .object({ cid: z.string() })
+      .safeParse(responseBody);
+    if (!parsedResponseBody.success) {
+      throw new Error("Response body is not valid");
+    }
+
+    const ipfsHash = parsedResponseBody.data.cid;
+
+    await createPostOnChain({
       contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
       provider,
       data: { title, body: ipfsHash },
