@@ -35,12 +35,11 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
         const accounts = await browserProvider.send("eth_requestAccounts", []);
         const network = await browserProvider.getNetwork();
 
-        const expectedChainId = parseInt(
-          process.env.NEXT_PUBLIC_CHAIN_ID || "1337", // Default to local if not specified
-          10
+        const expectedChainId = BigInt(
+          process.env.NEXT_PUBLIC_CHAIN_ID || "1337" // Default to local chain if not specified
         );
 
-        if (network.chainId !== BigInt(expectedChainId)) {
+        if (network.chainId !== expectedChainId) {
           alert("Please switch to the correct network in MetaMask.");
           return;
         }
@@ -48,16 +47,27 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
         setProvider(browserProvider);
         setAccount(accounts[0]);
 
-        window.ethereum.on("accountsChanged", (accounts: string[]) => {
+        const handleAccountsChanged = (accounts: string[]) => {
           setAccount(accounts.length > 0 ? accounts[0] : null);
-        });
+        };
 
-        window.ethereum.on("chainChanged", (chainId: string) => {
-          if (parseInt(chainId, 16) !== expectedChainId) {
+        const handleChainChanged = (chainId: string) => {
+          if (BigInt(chainId) !== expectedChainId) {
             alert("Please switch to the correct network in MetaMask.");
             disconnect();
           }
-        });
+        };
+
+        window.ethereum.on("accountsChanged", handleAccountsChanged);
+        window.ethereum.on("chainChanged", handleChainChanged);
+
+        return () => {
+          window.ethereum.removeListener(
+            "accountsChanged",
+            handleAccountsChanged
+          );
+          window.ethereum.removeListener("chainChanged", handleChainChanged);
+        };
       } catch (error) {
         console.error("Error connecting to MetaMask:", error);
       }
