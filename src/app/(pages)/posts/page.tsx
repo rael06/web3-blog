@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fetchPosts } from "@/app/api/blog";
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
