@@ -31,5 +31,6 @@ export async function getData(cid: string): Promise<unknown> {
 
   // Parse the JSON string into an object
   const data = JSON.parse(content);
+  console.log(`Data cid ${cid} retrieved:`, data);
   return data;
 }
