@@ -4,10 +4,10 @@ WORKDIR /app
 COPY .next .
 COPY public .
 COPY package.json .
-COPY next.config.js .
+COPY next.config.ts .
 COPY package-lock.json .
 
-RUN npm install
+RUN npm install --production
 
 EXPOSE 3093
 
