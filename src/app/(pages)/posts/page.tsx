@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchPosts } from "../../api/blog";
+import { fetchPosts } from "@/app/api/blog";
 
 export default async function Page() {
   const posts = await fetchPosts();

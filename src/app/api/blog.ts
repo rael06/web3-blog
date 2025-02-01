@@ -34,19 +34,23 @@ export async function fetchPosts(): Promise<PostModel[]> {
   const posts = [];
 
   for (const post of parsedContractPosts) {
-    const parsedContent = await postModelContentSchema.safeParseAsync(
-      await getData(post.content)
-    );
-    if (parsedContent.success)
-      posts.push({
-        id: post.id.toString(),
-        title: post.title,
-        content: {
-          ...parsedContent.data,
-          cid: post.content,
-        },
-        isPublished: post.isPublished,
-      });
+    try {
+      const parsedContent = await postModelContentSchema.safeParseAsync(
+        await getData(post.content)
+      );
+      if (parsedContent.success)
+        posts.push({
+          id: post.id.toString(),
+          title: post.title,
+          content: {
+            ...parsedContent.data,
+            cid: post.content,
+          },
+          isPublished: post.isPublished,
+        });
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   return posts;
