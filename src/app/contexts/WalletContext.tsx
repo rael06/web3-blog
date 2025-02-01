@@ -1,14 +1,7 @@
 "use client";
 
 import { ethers } from "ethers";
-import {
-  createContext,
-  PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, PropsWithChildren, useContext, useState } from "react";
 
 type WalletContextType = {
   account: string | null;
@@ -23,12 +16,12 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<string | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
 
-  const disconnect = useCallback(() => {
+  const disconnect = () => {
     setAccount(null);
     setProvider(null);
-  }, []);
+  };
 
-  const connect = useCallback(async () => {
+  const connect = async () => {
     if (typeof window.ethereum !== "undefined") {
       try {
         const browserProvider = new ethers.BrowserProvider(window.ethereum);
@@ -74,11 +67,7 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
     } else {
       alert("MetaMask is not installed. Please install it to use this app.");
     }
-  }, [disconnect]);
-
-  useEffect(() => {
-    connect();
-  }, [connect]);
+  };
 
   return (
     <WalletContext.Provider value={{ account, provider, disconnect, connect }}>
