@@ -110,6 +110,7 @@ export default function CreatePostForm() {
     <div>
       {account && provider && (
         <>
+          <p>Connected as: {account}</p>
           <input type="text" placeholder="Title" ref={titleRef} />
           <input type="text" placeholder="Body" ref={bodyRef} />
           <button type="submit" onClick={submit}>
