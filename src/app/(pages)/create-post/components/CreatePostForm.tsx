@@ -10,17 +10,17 @@ import { addData } from "@/app/api/ipfs";
 export async function createPost({
   contractAddress,
   provider,
-  data: { title, content },
+  data: { title, body },
 }: {
   contractAddress: string;
   provider: ethers.BrowserProvider;
-  data: { title: string; content: string };
+  data: { title: string; body: string };
 }) {
   const signer = await provider.getSigner();
 
   const contract = new ethers.Contract(contractAddress, blogAbi, signer);
 
-  const tx = await contract.createPost(title, content);
+  const tx = await contract.createPost(title, body);
   const receipt = await tx.wait();
 
   const eventFragment = contract.interface.getEvent("PostCreated");
@@ -48,7 +48,7 @@ export async function createPost({
 export default function CreatePostForm() {
   const { account, provider, connect } = useWalletContext();
   const titleRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -61,8 +61,8 @@ export default function CreatePostForm() {
     e.preventDefault();
 
     const title = titleRef.current?.value;
-    const content = contentRef.current?.value;
-    if (!title || !content) {
+    const body = bodyRef.current?.value;
+    if (!title || !body) {
       // Todo: show error
       console.log("not valid");
       return;
@@ -74,14 +74,14 @@ export default function CreatePostForm() {
       return;
     }
 
-    const data = { title, content };
+    const data = { title, body };
 
     const ipfsHash = await addData(data);
 
     await createPost({
       contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
       provider,
-      data: { title, content: ipfsHash },
+      data: { title, body: ipfsHash },
     });
     router.push(`/posts`);
   };
@@ -91,7 +91,7 @@ export default function CreatePostForm() {
       {account && provider && (
         <>
           <input type="text" placeholder="Title" ref={titleRef} />
-          <input type="text" placeholder="Content" ref={contentRef} />
+          <input type="text" placeholder="Body" ref={bodyRef} />
           <button type="submit" onClick={submit}>
             Create Post
           </button>

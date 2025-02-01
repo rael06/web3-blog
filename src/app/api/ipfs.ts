@@ -13,23 +13,18 @@ export async function addData(
 }
 
 // Function to retrieve data from IPFS
-export async function getData(cid: string) {
-  try {
-    const decoder = new TextDecoder();
-    let content = "";
+export async function getData(cid: string): Promise<unknown> {
+  const decoder = new TextDecoder();
+  let content = "";
 
-    for await (const chunk of ipfs.cat(cid)) {
-      content += decoder.decode(chunk, { stream: true });
-    }
-
-    // Decode any remaining bytes in the buffer
-    content += decoder.decode();
-
-    // Parse the JSON string into an object
-    const data = JSON.parse(content);
-    console.log("Retrieved data:", data);
-    return data;
-  } catch (error) {
-    console.error("Error retrieving data from IPFS:", error);
+  for await (const chunk of ipfs.cat(cid)) {
+    content += decoder.decode(chunk, { stream: true });
   }
+
+  // Decode any remaining bytes in the buffer
+  content += decoder.decode();
+
+  // Parse the JSON string into an object
+  const data = JSON.parse(content);
+  return data;
 }
