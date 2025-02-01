@@ -1,10 +1,13 @@
 FROM node:23.7.0
 WORKDIR /app
 
-COPY . .
+COPY .next .
+COPY public .
+COPY package.json .
+COPY next.config.js .
+COPY package-lock.json .
 
 RUN npm install
-RUN npm run build
 
 EXPOSE 3093
 
