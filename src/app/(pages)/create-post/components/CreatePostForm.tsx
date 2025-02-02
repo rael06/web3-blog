@@ -103,15 +103,17 @@ export default function CreatePostForm() {
       provider,
       data: { cid: ipfsHash, category },
     });
-    alert(
-      [
-        `Post id ${id} created on chain`,
-        `IPFS CID:`,
-        `https://ipfs.io/ipfs/${ipfsHash}`,
-        `Transaction:`,
-        `${process.env.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL}/tx/${txHash}`,
-      ].join("\n")
-    );
+    const message = [
+      `Post id ${id} created on chain`,
+      `IPFS CID:`,
+      `https://ipfs.io/ipfs/${ipfsHash}`,
+      `Transaction:`,
+      `${process.env.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL}/tx/${txHash}`,
+    ].join("\n");
+
+    console.log(message);
+    alert(message);
+
     router.push(`/posts`);
   };
 
