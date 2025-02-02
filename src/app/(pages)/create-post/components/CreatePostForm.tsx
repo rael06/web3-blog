@@ -104,7 +104,13 @@ export default function CreatePostForm() {
       data: { cid: ipfsHash, category },
     });
     alert(
-      `Post created with IPFS CID: ${ipfsHash} with tx ${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL}/${txHash}, and it has id ${id}`
+      [
+        `Post id ${id} created on chain`,
+        `IPFS CID:`,
+        `https://ipfs.io/ipfs/${ipfsHash}`,
+        `Transaction:`,
+        `${process.env.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL}/tx/${txHash}`,
+      ].join("\n")
     );
     router.push(`/posts`);
   };
