@@ -2,9 +2,12 @@ import { z } from "zod";
 
 export const contractPostModelSchema = z.object({
   id: z.string(),
-  title: z.string(),
-  content: z.string(),
+  cid: z.string(),
+  createdAt: z.date(),
+  authorAddress: z.string(),
+  category: z.string(),
   isPublished: z.boolean(),
+  isDeleted: z.boolean(),
 });
 
 export type ContractPostModel = z.infer<typeof contractPostModelSchema>;
@@ -15,13 +18,15 @@ export const postModelContentSchema = z.object({
   image: z.string().optional(),
 });
 
-export type PostContentModel = { cid: string } & z.infer<
-  typeof postModelContentSchema
->;
+export type PostContentModel = z.infer<typeof postModelContentSchema>;
 
 export type PostModel = {
   id: string;
-  title: string;
-  content: PostContentModel;
+  cid: string;
+  createdAt: Date;
+  category: string;
+  authorAddress: string;
   isPublished: boolean;
+  isDeleted: boolean;
+  content: PostContentModel;
 };

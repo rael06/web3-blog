@@ -10,17 +10,17 @@ import { z } from "zod";
 export async function createPostOnChain({
   contractAddress,
   provider,
-  data: { title, body },
+  data: { cid, category },
 }: {
   contractAddress: string;
   provider: ethers.BrowserProvider;
-  data: { title: string; body: string };
-}) {
+  data: { cid: string; category: string };
+}): Promise<{ id: string; txHash: string }> {
   const signer = await provider.getSigner();
 
   const contract = new ethers.Contract(contractAddress, blogAbi, signer);
 
-  const tx = await contract.createPost(title, body);
+  const tx = await contract.createPost(cid, category);
   const receipt = await tx.wait();
 
   const eventFragment = contract.interface.getEvent("PostCreated");
@@ -37,10 +37,8 @@ export async function createPostOnChain({
 
   if (eventLogs.length > 0) {
     const postId = eventLogs[0].args.id.toString();
-    console.log("New post created with ID:", postId);
-    return { id: postId, txHash: receipt.transactionHash };
+    return { id: postId, txHash: receipt.hash };
   } else {
-    console.log("PostCreated event not found in transaction logs.");
     throw new Error("PostCreated event not found in transaction logs.");
   }
 }
@@ -49,6 +47,7 @@ export default function CreatePostForm() {
   const { account, provider, connect } = useWalletContext();
   const titleRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,7 +61,8 @@ export default function CreatePostForm() {
 
     const title = titleRef.current?.value;
     const body = bodyRef.current?.value;
-    if (!title || !body) {
+    const category = categoryRef.current?.value;
+    if (!title || !body || !category) {
       // Todo: show error
       console.log("not valid");
       return;
@@ -76,7 +76,7 @@ export default function CreatePostForm() {
 
     const data = { title, body };
 
-    const response = await fetch(`/api/posts`, {
+    const response = await fetch(`/api/ipfs/posts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -98,11 +98,14 @@ export default function CreatePostForm() {
 
     const ipfsHash = parsedResponseBody.data.cid;
 
-    await createPostOnChain({
+    const { txHash, id } = await createPostOnChain({
       contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
       provider,
-      data: { title, body: ipfsHash },
+      data: { cid: ipfsHash, category },
     });
+    alert(
+      `Post created with IPFS CID: ${ipfsHash} with tx ${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL}/${txHash}, and it has id ${id}`
+    );
     router.push(`/posts`);
   };
 
@@ -113,6 +116,12 @@ export default function CreatePostForm() {
           <p>Connected as: {account}</p>
           <input type="text" placeholder="Title" ref={titleRef} />
           <input type="text" placeholder="Body" ref={bodyRef} />
+          <input
+            type="text"
+            placeholder="Category"
+            ref={categoryRef}
+            defaultValue="general"
+          />
           <button type="submit" onClick={submit}>
             Create Post
           </button>

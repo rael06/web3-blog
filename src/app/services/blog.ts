@@ -18,11 +18,23 @@ export async function fetchPosts(): Promise<PostModel[]> {
     provider
   );
 
-  const contractPosts = (await contract.fetchPosts()).map((post: any) => ({
+  const page = await contract.getPostsPaginated(
+    0,
+    10,
+    false,
+    ethers.ZeroAddress,
+    "",
+    0,
+    0
+  );
+  const contractPosts = page[0]?.map((post: any) => ({
     id: post.id.toString(),
-    title: post.title,
-    content: post.content,
+    cid: post.cid,
+    createdAt: new Date(Number(post.createdAt) * 1000),
+    authorAddress: post.author,
+    category: post.category,
     isPublished: post.isPublished,
+    isDeleted: post.isDeleted,
   }));
 
   const parsedContractPosts = [];
@@ -31,22 +43,22 @@ export async function fetchPosts(): Promise<PostModel[]> {
     if (parsed.success) parsedContractPosts.push(parsed.data);
   }
 
-  const posts = [];
-
+  const posts: PostModel[] = [];
   for (const post of parsedContractPosts) {
     try {
       const parsedContent = await postModelContentSchema.safeParseAsync(
-        await getData(post.content)
+        await getData(post.cid)
       );
       if (parsedContent.success)
         posts.push({
           id: post.id.toString(),
-          title: post.title,
-          content: {
-            ...parsedContent.data,
-            cid: post.content,
-          },
+          cid: post.cid,
+          createdAt: post.createdAt,
+          authorAddress: post.authorAddress,
+          category: post.category,
+          content: parsedContent.data,
           isPublished: post.isPublished,
+          isDeleted: post.isDeleted,
         });
     } catch (e) {
       console.log(e);

@@ -1,11 +1,21 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
+import { HardhatUserConfig } from "hardhat/config";
+import "@openzeppelin/hardhat-upgrades";
+import "@nomicfoundation/hardhat-toolbox";
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.28",
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      viaIR: true,
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
   networks: {
     hardhat: {
       chainId: 1337,

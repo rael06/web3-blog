@@ -10,7 +10,6 @@ export async function addData(
 ): Promise<string> {
   const { cid } = await ipfs.add(JSON.stringify(data));
   if (serverEnvVars.IS_IPFS_PIN_ENABLED) await ipfs.pin.add(cid);
-  console.log("Data added with CID:", cid.toString());
   return cid.toString();
 }
 
@@ -27,6 +26,5 @@ export async function getData(cid: string): Promise<unknown> {
 
   // Parse the JSON string into an object
   const data = JSON.parse(content);
-  console.log(`${new Date().toISOString()}: Data cid ${cid} retrieved:`, data);
   return data;
 }

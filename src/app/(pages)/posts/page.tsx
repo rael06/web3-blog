@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchPosts } from "@/app/api/blog";
+import { fetchPosts } from "@/app/services/blog";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +14,10 @@ export default async function Page() {
           <div key={post.id}>
             <Link href={`/posts/${post.id}`}>{post.id.padStart(3, "0")}</Link>
             <span>
-              , cid: {post.content.cid}, title: {post.title}, content:{" "}
-              {post.content.body}, image: {post.content.image}
+              , cid: {post.cid}, title: {post.content.title}, content:{" "}
+              {post.content.body}, image: {post.content.image}, createdAt:{" "}
+              {post.createdAt.toISOString()}, authorAddress:{" "}
+              {post.authorAddress}
             </span>
           </div>
         ))}

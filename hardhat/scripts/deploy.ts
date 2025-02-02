@@ -3,23 +3,33 @@ import fs from "fs";
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
-  console.log("Deploying contracts with the account:", deployer?.address);
+  if (!deployer) throw new Error("No deployer account found");
 
-  const Blog = await hre.ethers.getContractFactory("Blog");
-  const blog = await Blog.deploy("Rael's Web3 Blog");
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  // Wait for the deployment transaction to be mined
-  await blog.deploymentTransaction()?.wait();
+  const BlogV1 = await hre.ethers.getContractFactory("BlogV1");
 
+  // Deploy Proxy
+  const blog = await hre.upgrades.deployProxy(BlogV1, [deployer.address], {
+    initializer: "initialize",
+  });
+
+  // Wait for deployment confirmation
+  await blog.waitForDeployment();
+
+  // Get the proxy contract address
+  const contractAddress = await blog.getAddress();
+
+  // Save contract address to a file
   fs.writeFileSync(
     "./accounts-config.ts",
     `
-  export const ownerAddress = "${deployer?.address}";
-  export const contractAddress = "${(await blog.getAddress()).toString()}";
+  export const ownerAddress = "${deployer.address}";
+  export const contractAddress = "${contractAddress}";
   `
   );
 
-  console.log("Blog deployed to:", await blog.getAddress());
+  console.log("BlogV1 deployed to:", contractAddress);
 }
 
 main().catch((error) => {
