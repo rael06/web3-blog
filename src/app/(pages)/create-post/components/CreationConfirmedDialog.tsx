@@ -35,6 +35,7 @@ const CreationConfirmedDialog: React.FC<Props> = ({
       }}
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
+      maxWidth="lg"
     >
       <DialogTitle id="confirmation-dialog-title">Post Created</DialogTitle>
       <DialogContent>
