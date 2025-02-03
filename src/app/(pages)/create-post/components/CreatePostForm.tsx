@@ -1,18 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useWalletContext } from "@/app/contexts/WalletContext";
-import { createPost } from "@/usecases/blog/createPost";
-import {
-  Box,
-  Stack,
-  Typography,
-  TextField,
-  Alert,
-  Button,
-} from "@mui/material";
-import CreationConfirmedDialog from "./CreationConfirmedDialog";
+import { Box, Stack, Typography, TextField, Button } from "@mui/material";
+import CreationConfirmationDialog from "./CreationConfirmationDialog";
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
@@ -35,26 +27,36 @@ const postSchema = z.object({
 export default function CreatePostForm() {
   const { account, provider } = useWalletContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [transactionData, setTransactionData] = useState<Awaited<
-    ReturnType<typeof createPost>
-  > | null>(null);
 
   const [title, setTitle] = useState("title");
   const [body, setBody] = useState("body");
   const [category, setCategory] = useState("General");
   const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
     title?: string[];
     body?: string[];
     category?: string[];
     image?: string[];
   }>({});
-  const [submissionError, setSubmissionError] = useState("");
+
+  useEffect(() => {
+    // Cleanup the object URL when the component unmounts or when a new image is selected
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setImage(files[0]);
+      const selectedImage = files[0];
+      setImage(selectedImage);
+      // Generate a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(selectedImage);
+      setImagePreview(previewUrl);
     }
   };
 
@@ -83,41 +85,19 @@ export default function CreatePostForm() {
       return;
     }
 
-    try {
-      if (!provider) {
-        throw new Error("Provider not connected");
-      }
-
-      const transactionData = await createPost({
-        provider,
-        postData: {
-          title,
-          body,
-          category,
-          image,
-        },
-      });
-
-      setTransactionData(transactionData);
-      setIsDialogOpen(true);
-    } catch (error) {
-      console.error(error);
-      setSubmissionError("Failed to create post. Please try again.");
-    }
+    setIsDialogOpen(true);
   };
 
   return (
     <>
-      {transactionData && (
-        <CreationConfirmedDialog
-          isDialogOpen={isDialogOpen}
-          setIsDialogOpen={setIsDialogOpen}
-          transactionData={transactionData}
-        />
-      )}
+      <CreationConfirmationDialog
+        isDialogOpen={isDialogOpen}
+        setIsDialogOpen={setIsDialogOpen}
+        postData={{ title, body, category, image }}
+      />
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
         {account && provider ? (
-          <Stack spacing={2}>
+          <Stack spacing={2} alignItems="flex-start">
             <TextField
               label="Title"
               value={title}
@@ -147,23 +127,40 @@ export default function CreatePostForm() {
               fullWidth
               required
             />
-            <Button variant="contained" component="label">
-              Upload Image
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleImageChange}
+            <Box display="flex" justifyContent={"space-between"} width="100%">
+              <Button
+                variant="contained"
+                component="label"
+                sx={{ width: "auto" }}
+              >
+                Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleImageChange}
+                />
+              </Button>
+
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                sx={{ width: "auto" }}
+              >
+                Create Post
+              </Button>
+            </Box>
+            {imagePreview && (
+              <Box
+                component="img"
+                src={imagePreview}
+                alt="Image Preview"
+                sx={{ height: 300, mt: 2 }}
               />
-            </Button>
+            )}
             {errors.image && (
               <Typography color="error">{errors.image[0]}</Typography>
-            )}
-            <Button type="submit" variant="contained" color="primary">
-              Create Post
-            </Button>
-            {submissionError && (
-              <Alert severity="error">{submissionError}</Alert>
             )}
           </Stack>
         ) : (

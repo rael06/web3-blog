@@ -18,7 +18,7 @@ const Header: React.FC = () => {
       <Toolbar>
         {/* Left Section: Logo and Navigation */}
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-          <Image src="/next.svg" alt="Blockchain Logo" width={40} height={40} />
+          <Image src="/logo.jpeg" alt="Web3 blog logo" width={40} height={40} />
           <Box sx={{ display: "flex", ml: 2 }}>
             <Button color="inherit" component={Link} href="/">
               Home
