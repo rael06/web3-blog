@@ -1,3 +1,4 @@
+import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { fetchPosts } from "@/usecases/blog/fetchPosts";
 import Image from "next/image";
 
@@ -23,9 +24,9 @@ export default async function Page({
   return (
     <main>
       <h1>{id}</h1>
-      {post?.content.image && (
+      {post?.content.imageCid && (
         <Image
-          src={post?.content.image}
+          src={`${serverEnvVars.IPFS_GET_URL}/${post?.content.imageCid}`}
           alt={post?.content.title}
           width={400}
           height={400}
