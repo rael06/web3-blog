@@ -7,6 +7,7 @@ import theme from "../theme";
 import { Roboto } from "next/font/google";
 import Header from "../components/Header";
 import { Box, CssBaseline } from "@mui/material";
+import Footer from "../components/Footer";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
@@ -44,6 +45,7 @@ export default function RootLayout({
               >
                 {children}
               </Box>
+              <Footer />
             </WalletContextProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>

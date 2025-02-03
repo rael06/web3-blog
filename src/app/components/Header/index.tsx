@@ -14,9 +14,8 @@ const Header: React.FC = () => {
   const { account, connect, disconnect } = useWalletContext();
 
   return (
-    <AppBar position="static">
+    <AppBar position="static" component={"header"}>
       <Toolbar>
-        {/* Left Section: Logo and Navigation */}
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
           <Image src="/logo.jpeg" alt="Web3 blog logo" width={40} height={40} />
           <Box sx={{ display: "flex", ml: 2 }}>
@@ -29,7 +28,6 @@ const Header: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Right Section: Wallet Information */}
         <Box>
           {account ? (
             <>
