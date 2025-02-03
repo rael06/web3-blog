@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fetchPosts } from "@/usecases/blog/fetchPosts";
+import { Box, Typography } from "@mui/material";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +8,12 @@ export default async function Page() {
   const posts = await fetchPosts();
 
   return (
-    <div>
-      <Link href="/create-post">CreatePost</Link>
+    <Box>
+      <Link href="/create-post">
+        <Typography variant="h4" component="h1" color="primary">
+          CreatePost
+        </Typography>
+      </Link>
       <ul>
         {posts.map((post) => (
           <div key={post.id}>
@@ -22,6 +27,6 @@ export default async function Page() {
           </div>
         ))}
       </ul>
-    </div>
+    </Box>
   );
 }
