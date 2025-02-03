@@ -44,7 +44,7 @@ const Page: React.FC = async () => {
             <CardActionArea component={Link} href={`/posts/${post.id}`}>
               <Grid container>
                 {post.content.imageCid && (
-                  <Grid size={2}>
+                  <Grid size={2} p={2}>
                     <CardMedia
                       component="img"
                       image={`${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useWalletContext } from "@/app/contexts/WalletContext";
 import { createPost } from "@/usecases/blog/createPost";
@@ -13,12 +12,11 @@ import {
   Alert,
   Button,
 } from "@mui/material";
+import CreationConfirmedDialog from "./CreationConfirmedDialog";
 
-// Constants for image validation
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
-// Zod schema for form validation
 const postSchema = z.object({
   title: z.string().min(1, "Title is required"),
   body: z.string().min(1, "Body is required"),
@@ -31,12 +29,15 @@ const postSchema = z.object({
     .refine((file) => ACCEPTED_IMAGE_TYPES.includes(file.type), {
       message: "Only .jpg, .jpeg, .png, and .gif formats are accepted",
     })
-    .optional(),
+    .nullable(),
 });
 
 export default function CreatePostForm() {
   const { account, provider } = useWalletContext();
-  const router = useRouter();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [transactionData, setTransactionData] = useState<Awaited<
+    ReturnType<typeof createPost>
+  > | null>(null);
 
   const [title, setTitle] = useState("title");
   const [body, setBody] = useState("body");
@@ -50,7 +51,6 @@ export default function CreatePostForm() {
   }>({});
   const [submissionError, setSubmissionError] = useState("");
 
-  // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -58,7 +58,6 @@ export default function CreatePostForm() {
     }
   };
 
-  // Validate form fields
   const validate = () => {
     const result = postSchema.safeParse({
       title,
@@ -77,7 +76,6 @@ export default function CreatePostForm() {
     return true;
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -90,7 +88,7 @@ export default function CreatePostForm() {
         throw new Error("Provider not connected");
       }
 
-      const { id, txHash, cid } = await createPost({
+      const transactionData = await createPost({
         provider,
         postData: {
           title,
@@ -100,18 +98,8 @@ export default function CreatePostForm() {
         },
       });
 
-      const message = [
-        `Post ID ${id} created on chain`,
-        `IPFS CID:`,
-        `${process.env.NEXT_PUBLIC_IPFS_GET_URL}/${cid}`,
-        `Transaction:`,
-        `${process.env.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL}/tx/${txHash}`,
-      ].join("\n");
-
-      console.log(message);
-      alert(message);
-
-      router.push(`/posts`);
+      setTransactionData(transactionData);
+      setIsDialogOpen(true);
     } catch (error) {
       console.error(error);
       setSubmissionError("Failed to create post. Please try again.");
@@ -119,60 +107,71 @@ export default function CreatePostForm() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
-      {account && provider ? (
-        <Stack spacing={2}>
-          <TextField
-            label="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            error={!!errors.title}
-            helperText={errors.title?.[0]}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            error={!!errors.body}
-            helperText={errors.body?.[0]}
-            fullWidth
-            required
-            multiline
-            rows={4}
-          />
-          <TextField
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            error={!!errors.category}
-            helperText={errors.category?.[0]}
-            fullWidth
-            required
-          />
-          <Button variant="contained" component="label">
-            Upload Image
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleImageChange}
-            />
-          </Button>
-          {errors.image && (
-            <Typography color="error">{errors.image[0]}</Typography>
-          )}
-          <Button type="submit" variant="contained" color="primary">
-            Create Post
-          </Button>
-          {submissionError && <Alert severity="error">{submissionError}</Alert>}
-        </Stack>
-      ) : (
-        <Typography variant="body1">
-          Please connect your wallet to create a post.
-        </Typography>
+    <>
+      {transactionData && (
+        <CreationConfirmedDialog
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          transactionData={transactionData}
+        />
       )}
-    </Box>
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+        {account && provider ? (
+          <Stack spacing={2}>
+            <TextField
+              label="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              error={!!errors.title}
+              helperText={errors.title?.[0]}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              error={!!errors.body}
+              helperText={errors.body?.[0]}
+              fullWidth
+              required
+              multiline
+              rows={4}
+            />
+            <TextField
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              error={!!errors.category}
+              helperText={errors.category?.[0]}
+              fullWidth
+              required
+            />
+            <Button variant="contained" component="label">
+              Upload Image
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleImageChange}
+              />
+            </Button>
+            {errors.image && (
+              <Typography color="error">{errors.image[0]}</Typography>
+            )}
+            <Button type="submit" variant="contained" color="primary">
+              Create Post
+            </Button>
+            {submissionError && (
+              <Alert severity="error">{submissionError}</Alert>
+            )}
+          </Stack>
+        ) : (
+          <Typography variant="body1">
+            Please connect your wallet to create a post.
+          </Typography>
+        )}
+      </Box>
+    </>
   );
 }

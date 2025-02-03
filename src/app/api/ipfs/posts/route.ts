@@ -10,14 +10,12 @@ export const config = {
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse the form data
     const formData = await request.formData();
     const title = formData.get("title");
     const body = formData.get("body");
     const category = formData.get("category");
     const image = formData.get("image") as File | null;
 
-    // Validate the fields
     const schema = z.object({
       title: z.string().min(1, "Title is required"),
       body: z.string().min(1, "Body is required"),
@@ -26,15 +24,13 @@ export async function POST(request: NextRequest) {
 
     const data = schema.parse({ title, body, category });
 
-    let imageCid;
+    let imageCid = null;
     if (image) {
       const arrayBuffer = await image.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       imageCid = await ipfs.addFile(buffer);
-      // You can now use 'buffer' to upload to IPFS or any other storage
     }
 
-    // Add data to IPFS
     const cid = await ipfs.addData({ ...data, imageCid });
 
     return NextResponse.json({ cid }, { status: 201 });
