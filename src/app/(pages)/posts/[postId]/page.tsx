@@ -8,6 +8,7 @@ import {
   CardContent,
   Typography,
   Box,
+  Container,
 } from "@mui/material";
 import Link from "next/link";
 
@@ -39,39 +40,36 @@ export default async function Page({
     );
   }
   return (
-    <Card
-      key={post.id}
-      sx={{ m: 2 }}
-      component={Link}
-      href={`/posts/${post.id}`}
-    >
-      <CardActionArea>
-        {post.content.imageCid && (
-          <CardMedia
-            component="img"
-            height="140"
-            image={`${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`}
-            alt={post.content.title}
-          />
-        )}
-        <CardContent>
-          <Typography gutterBottom variant="h5" component="div">
-            {post.content.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {post.content.body}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Category: {post.category}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            By {post.authorAddress}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" fontStyle="italic">
-            {formatDate(post.createdAt)}
-          </Typography>
-        </CardContent>
-      </CardActionArea>
-    </Card>
+    <Container>
+      <Card key={post.id} sx={{ m: 2 }}>
+        <CardActionArea
+          component={Link}
+          href={`/posts/${post.id}`}
+          sx={{ p: 2 }}
+        >
+          {post.content.imageCid && (
+            <CardMedia
+              component="img"
+              image={`${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`}
+              alt={post.content.title}
+              sx={{ height: "400px", objectFit: "contain" }}
+            />
+          )}
+          <CardContent>
+            <Typography gutterBottom variant="h5" component="div">
+              {post.content.title}
+            </Typography>
+            <Typography variant="body2">{post.content.body}</Typography>
+            <Typography variant="body2" mt={2}>
+              Category: {post.category}
+            </Typography>
+            <Typography variant="body2">By {post.authorAddress}</Typography>
+            <Typography variant="body2">
+              {formatDate(post.createdAt)}
+            </Typography>
+          </CardContent>
+        </CardActionArea>
+      </Card>
+    </Container>
   );
 }
