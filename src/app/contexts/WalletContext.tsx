@@ -1,7 +1,14 @@
 "use client";
 
 import { ethers } from "ethers";
-import { createContext, PropsWithChildren, useContext, useState } from "react";
+import {
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
 type WalletContextType = {
   account: string | null;
@@ -16,12 +23,7 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<string | null>(null);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
 
-  const disconnect = () => {
-    setAccount(null);
-    setProvider(null);
-  };
-
-  const connect = async () => {
+  const connect = useCallback(async () => {
     if (typeof window.ethereum !== "undefined") {
       try {
         const browserProvider = new ethers.BrowserProvider(window.ethereum);
@@ -39,6 +41,8 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
 
         setProvider(browserProvider);
         setAccount(accounts[0]);
+
+        localStorage.setItem("autoconnect", "true");
 
         const handleAccountsChanged = (accounts: string[]) => {
           setAccount(accounts.length > 0 ? accounts[0] : null);
@@ -67,7 +71,20 @@ export default function WalletContextProvider({ children }: PropsWithChildren) {
     } else {
       alert("MetaMask is not installed. Please install it to use this app.");
     }
+  }, []);
+
+  const disconnect = () => {
+    setAccount(null);
+    setProvider(null);
+    localStorage.setItem("autoconnect", "false");
   };
+
+  useEffect(() => {
+    const autoconnect = localStorage.getItem("autoconnect") === "true";
+    if (autoconnect) {
+      connect();
+    }
+  }, [connect]);
 
   return (
     <WalletContext.Provider value={{ account, provider, disconnect, connect }}>
