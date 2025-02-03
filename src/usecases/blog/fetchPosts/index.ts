@@ -85,17 +85,10 @@ export async function fetchPosts(filter?: {
           isPublished: post.isPublished,
           isDeleted: post.isDeleted,
         });
-      else
-        console.error(
-          "Failed to parse post content from IPFS",
-          parsedContent.error
-        );
     } catch (e) {
       console.error(e);
     }
   }
-
-  console.info("Fetched posts:", JSON.stringify(posts, null, 2));
 
   return posts;
 }
