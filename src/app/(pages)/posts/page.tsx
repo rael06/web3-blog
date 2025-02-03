@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchPosts } from "@/services/blog";
+import { fetchPosts } from "@/usecases/blog/fetchPosts";
 
 export const dynamic = "force-dynamic";
 

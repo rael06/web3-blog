@@ -1,16 +1,40 @@
-"use server";
-
 import { ethers } from "ethers";
 import {
   PostModel,
   contractPostModelSchema,
   postModelContentSchema,
 } from "@/models/post";
-import { serverEnvVars } from "@/services/serverEnvVars";
+import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { blogAbi } from "@/contracts/blog";
-import { getData } from "./ipfs";
+import { getData } from "../../../services/ipfs";
 
-export async function fetchPosts(): Promise<PostModel[]> {
+export async function fetchPosts(filter?: {
+  startIndex?: number;
+  count?: number;
+  reverse?: boolean;
+  authorFilter?: string;
+  categoryFilter?: string;
+  fromTimestamp?: number;
+  toTimestamp?: number;
+}): Promise<PostModel[]> {
+  const {
+    startIndex,
+    count,
+    reverse,
+    authorFilter,
+    categoryFilter,
+    fromTimestamp,
+    toTimestamp,
+  } = {
+    startIndex: filter?.startIndex || 0,
+    count: filter?.count || 10,
+    reverse: filter?.reverse || true,
+    authorFilter: filter?.authorFilter || ethers.ZeroAddress,
+    categoryFilter: filter?.categoryFilter || "",
+    fromTimestamp: filter?.fromTimestamp || 0,
+    toTimestamp: filter?.toTimestamp || 0,
+  };
+
   const provider = new ethers.JsonRpcProvider(serverEnvVars.BLOCKCHAIN_RPC_URL);
   const contract = new ethers.Contract(
     serverEnvVars.BLOG_CONTRACT_ADDRESS,
@@ -19,13 +43,13 @@ export async function fetchPosts(): Promise<PostModel[]> {
   );
 
   const page = await contract.getPostsPaginated(
-    0,
-    10,
-    false,
-    ethers.ZeroAddress,
-    "",
-    0,
-    0
+    startIndex,
+    count,
+    reverse,
+    authorFilter,
+    categoryFilter,
+    fromTimestamp,
+    toTimestamp
   );
   const contractPosts = page[0]?.map((post: any) => ({
     id: post.id.toString(),

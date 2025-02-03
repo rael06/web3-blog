@@ -1,7 +1,5 @@
-import "server-only";
-
 import { create } from "kubo-rpc-client";
-import { serverEnvVars } from "@/services/serverEnvVars";
+import { serverEnvVars } from "@/app/services/serverEnvVars";
 
 const ipfs = create({ url: serverEnvVars.IPFS_API_URL });
 

@@ -1,7 +1,7 @@
-import { fetchPosts } from "@/services/blog";
+import { fetchPosts } from "@/usecases/blog/fetchPosts";
 import Image from "next/image";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export const dynamicParams = true;
 

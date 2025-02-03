@@ -10,7 +10,7 @@ const schema = z.object({
   NEXT_PUBLIC_CHAIN_ID: z.string(),
 });
 
-function getEnvVars() {
+export function getEnvVars() {
   const env = schema.parse(process.env);
   return {
     BLOG_CONTRACT_ADDRESS: env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS,
@@ -22,5 +22,3 @@ function getEnvVars() {
     CHAIN_ID: env.NEXT_PUBLIC_CHAIN_ID,
   };
 }
-
-export const serverEnvVars = getEnvVars();
