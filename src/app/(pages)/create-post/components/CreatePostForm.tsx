@@ -1,34 +1,94 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useWalletContext } from "@/app/contexts/WalletContext";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { useWalletContext } from "@/app/contexts/WalletContext";
 import { createPost } from "@/usecases/blog/createPost";
+import {
+  Box,
+  Stack,
+  Typography,
+  TextField,
+  Alert,
+  Button,
+} from "@mui/material";
+
+// Constants for image validation
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
+
+// Zod schema for form validation
+const postSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  body: z.string().min(1, "Body is required"),
+  category: z.string().min(1, "Category is required"),
+  image: z
+    .instanceof(File)
+    .refine((file) => file.size <= MAX_FILE_SIZE, {
+      message: "Image must be less than 3MB",
+    })
+    .refine((file) => ACCEPTED_IMAGE_TYPES.includes(file.type), {
+      message: "Only .jpg, .jpeg, .png, and .gif formats are accepted",
+    })
+    .optional(),
+});
 
 export default function CreatePostForm() {
-  const { account, provider, connect } = useWalletContext();
-  const titleRef = useRef<HTMLInputElement>(null);
-  const bodyRef = useRef<HTMLInputElement>(null);
-  const categoryRef = useRef<HTMLInputElement>(null);
+  const { account, provider } = useWalletContext();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!account || !provider) {
-      connect();
-    }
-  });
+  const [title, setTitle] = useState("title");
+  const [body, setBody] = useState("body");
+  const [category, setCategory] = useState("General");
+  const [image, setImage] = useState<File | null>(null);
+  const [errors, setErrors] = useState<{
+    title?: string[];
+    body?: string[];
+    category?: string[];
+    image?: string[];
+  }>({});
+  const [submissionError, setSubmissionError] = useState("");
 
-  const submit = async (e: React.FormEvent) => {
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setImage(files[0]);
+    }
+  };
+
+  // Validate form fields
+  const validate = () => {
+    const result = postSchema.safeParse({
+      title,
+      body,
+      category,
+      image,
+    });
+
+    if (!result.success) {
+      const fieldErrors = result.error.formErrors.fieldErrors;
+      setErrors(fieldErrors);
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
 
     try {
       if (!provider) {
         throw new Error("Provider not connected");
       }
-
-      const title = titleRef.current?.value;
-      const body = bodyRef.current?.value;
-      const category = categoryRef.current?.value;
 
       const { id, txHash, cid } = await createPost({
         provider,
@@ -36,13 +96,14 @@ export default function CreatePostForm() {
           title,
           body,
           category,
+          image,
         },
       });
 
       const message = [
-        `Post id ${id} created on chain`,
+        `Post ID ${id} created on chain`,
         `IPFS CID:`,
-        `https://ipfs.io/ipfs/${cid}`,
+        `${process.env.NEXT_PUBLIC_IPFS_GET_URL}/${cid}`,
         `Transaction:`,
         `${process.env.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL}/tx/${txHash}`,
       ].join("\n");
@@ -52,31 +113,66 @@ export default function CreatePostForm() {
 
       router.push(`/posts`);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      setSubmissionError("Failed to create post. Please try again.");
     }
   };
 
   return (
-    <div>
-      {account && provider && (
-        <>
-          <p>Connected as: {account}</p>
-          <input type="text" placeholder="Title" ref={titleRef} />
-          <input type="text" placeholder="Body" ref={bodyRef} />
-          <input
-            type="text"
-            placeholder="Category"
-            ref={categoryRef}
-            defaultValue="general"
+    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
+      {account && provider ? (
+        <Stack spacing={2}>
+          <TextField
+            label="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            error={!!errors.title}
+            helperText={errors.title?.[0]}
+            fullWidth
+            required
           />
-          <button type="submit" onClick={submit}>
+          <TextField
+            label="Body"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            error={!!errors.body}
+            helperText={errors.body?.[0]}
+            fullWidth
+            required
+            multiline
+            rows={4}
+          />
+          <TextField
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            error={!!errors.category}
+            helperText={errors.category?.[0]}
+            fullWidth
+            required
+          />
+          <Button variant="contained" component="label">
+            Upload Image
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleImageChange}
+            />
+          </Button>
+          {errors.image && (
+            <Typography color="error">{errors.image[0]}</Typography>
+          )}
+          <Button type="submit" variant="contained" color="primary">
             Create Post
-          </button>
-        </>
+          </Button>
+          {submissionError && <Alert severity="error">{submissionError}</Alert>}
+        </Stack>
+      ) : (
+        <Typography variant="body1">
+          Please connect your wallet to create a post.
+        </Typography>
       )}
-      {(!account || !provider) && (
-        <button onClick={connect}>Connect Wallet</button>
-      )}
-    </div>
+    </Box>
   );
 }

@@ -3,17 +3,26 @@ import { z } from "zod";
 export async function createPostOnIpfs(data: {
   title: string;
   body: string;
+  category: string;
+  image: File | null;
 }): Promise<string> {
-  const response = await fetch(`/api/ipfs/posts`, {
+  const formData = new FormData();
+
+  formData.append("title", data.title);
+  formData.append("body", data.body);
+  formData.append("category", data.category);
+
+  if (data.image) {
+    formData.append("image", data.image);
+  }
+
+  const response = await fetch("/api/ipfs/posts", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: formData,
   });
 
   if (!response.ok) {
-    throw new Error("Failed to upload post on IPFS");
+    throw new Error("Failed to upload post to IPFS");
   }
 
   const responseBody = await response.json();
@@ -24,7 +33,6 @@ export async function createPostOnIpfs(data: {
     throw new Error("Response body is not valid");
   }
 
-  const ipfsHash = parsedResponseBody.data.cid;
-
-  return ipfsHash;
+  const cid = parsedResponseBody.data.cid;
+  return cid;
 }

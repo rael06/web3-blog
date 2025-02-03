@@ -5,12 +5,15 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "../theme";
 import { Roboto } from "next/font/google";
+import Header from "../components/Header";
+import { Box, CssBaseline } from "@mui/material";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
   display: "swap",
   variable: "--font-roboto",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -28,7 +31,19 @@ export default function RootLayout({
       <body className={roboto.variable}>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
-            <WalletContextProvider>{children}</WalletContextProvider>
+            <CssBaseline />
+            <WalletContextProvider>
+              <Header />
+              <Box
+                sx={{
+                  p: 2,
+                  height: "calc(100vh - (64px + 64px))", // Adjust based on header's height and footer's height
+                  overflow: "auto",
+                }}
+              >
+                {children}
+              </Box>
+            </WalletContextProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

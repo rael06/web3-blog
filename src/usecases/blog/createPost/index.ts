@@ -1,6 +1,5 @@
 import { BrowserProvider } from "ethers";
 import { createPostOnChain } from "./createOnChain";
-import { z } from "zod";
 import { createPostOnIpfs } from "./createOnIpfs";
 
 export async function createPost({
@@ -8,22 +7,19 @@ export async function createPost({
   postData,
 }: {
   provider: BrowserProvider;
-  postData: unknown;
+  postData: {
+    title: string;
+    body: string;
+    category: string;
+    image: File | null;
+  };
 }) {
-  const validatedPostData = await z
-    .object({
-      title: z.string(),
-      body: z.string(),
-      category: z.string(),
-    })
-    .parseAsync(postData);
-
-  const cid = await createPostOnIpfs(validatedPostData);
+  const cid = await createPostOnIpfs(postData);
 
   const onChainData = await createPostOnChain({
     contractAddress: process.env.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS!,
     provider,
-    data: { cid, category: validatedPostData.category },
+    data: { cid, category: postData.category },
   });
   return { ...onChainData, cid };
 }

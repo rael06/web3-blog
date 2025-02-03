@@ -26,3 +26,20 @@ export async function getData(cid: string): Promise<unknown> {
   const data = JSON.parse(content);
   return data;
 }
+
+export async function addFile(file: Buffer<ArrayBufferLike>): Promise<string> {
+  const { cid } = await ipfs.add(file);
+  if (serverEnvVars.IS_IPFS_PIN_ENABLED) {
+    await ipfs.pin.add(cid);
+  }
+  return cid.toString();
+}
+
+export async function getFile(cid: string): Promise<Blob> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of ipfs.cat(cid)) {
+    chunks.push(chunk);
+  }
+  const blob = new Blob(chunks);
+  return blob;
+}
