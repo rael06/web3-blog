@@ -5,9 +5,9 @@ import {
   PostModel,
   contractPostModelSchema,
   postModelContentSchema,
-} from "@/app/models/post";
-import { serverEnvVars } from "@/app/services/serverEnvVars";
-import { blogAbi } from "@/app/services/contracts/blog";
+} from "@/models/post";
+import { serverEnvVars } from "@/services/serverEnvVars";
+import { blogAbi } from "@/contracts/blog";
 import { getData } from "./ipfs";
 
 export async function fetchPosts(): Promise<PostModel[]> {

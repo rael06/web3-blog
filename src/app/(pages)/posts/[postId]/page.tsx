@@ -1,4 +1,4 @@
-import { fetchPosts } from "@/app/services/blog";
+import { fetchPosts } from "@/services/blog";
 import Image from "next/image";
 
 export const revalidate = 300;

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { blogAbi } from "@/app/services/contracts/blog";
+import { blogAbi } from "@/contracts/blog";
 
 export async function createPostOnChain({
   contractAddress,

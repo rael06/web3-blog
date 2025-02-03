@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useWalletContext } from "@/app/contexts/WalletContext";
 import { useRouter } from "next/navigation";
-import { createPost } from "@/app/services/blog/createPost";
+import { createPost } from "@/usecases/blog/createPost";
 
 export default function CreatePostForm() {
   const { account, provider, connect } = useWalletContext();

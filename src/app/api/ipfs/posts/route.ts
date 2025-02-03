@@ -1,7 +1,7 @@
 // app/api/submit/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import * as ipfs from "@/app/services/ipfs";
+import * as ipfs from "@/services/ipfs";
 
 export async function POST(request: NextRequest) {
   try {
