@@ -11,22 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { serverEnvVars } from "@/app/services/serverEnvVars";
-
-function truncateText(text: string, maxLength: number): string {
-  return text.length <= maxLength ? text : `${text.slice(0, maxLength)}...`;
-}
-
-function formatDate(date: Date): string {
-  const options: Intl.DateTimeFormatOptions = {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  };
-  return new Intl.DateTimeFormat("en-US", options).format(date);
-}
+import { formatDate, truncateText } from "@/app/services/formatters";
 
 const Page: React.FC = async () => {
   const posts = await fetchPosts();
