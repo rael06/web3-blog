@@ -70,8 +70,9 @@ export async function fetchPosts(filter?: {
   const posts: PostModel[] = [];
   for (const post of parsedContractPosts) {
     try {
+      const content = await getData(post.cid);
       const parsedContent = await postModelContentSchema.safeParseAsync(
-        await getData(post.cid)
+        content
       );
       if (parsedContent.success)
         posts.push({
@@ -84,6 +85,11 @@ export async function fetchPosts(filter?: {
           isPublished: post.isPublished,
           isDeleted: post.isDeleted,
         });
+      else
+        console.log(
+          "Failed to parse post content from IPFS",
+          parsedContent.error
+        );
     } catch (e) {
       console.log(e);
     }

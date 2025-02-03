@@ -15,7 +15,8 @@ export type ContractPostModel = z.infer<typeof contractPostModelSchema>;
 export const postModelContentSchema = z.object({
   title: z.string(),
   body: z.string(),
-  imageCid: z.string().optional(),
+  category: z.string(),
+  imageCid: z.string().nullable(),
 });
 
 export type PostContentModel = z.infer<typeof postModelContentSchema>;
