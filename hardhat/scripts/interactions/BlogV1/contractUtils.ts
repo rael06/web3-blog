@@ -6,5 +6,3 @@ export const BlogV1Abi = (
     abi: ConstructorParameters<typeof ethers.Contract>[1];
   }
 ).abi;
-
-export const BlogV1Address = "0xa1f10e4A69e35afBb0a5a696F33db0C80FE79163";

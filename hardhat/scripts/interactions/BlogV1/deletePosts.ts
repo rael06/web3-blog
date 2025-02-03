@@ -18,7 +18,11 @@ async function deletePost(postId: number) {
   console.log(`Transaction confirmed!`, JSON.stringify(receipt, null, 2));
 }
 
-deletePost(40).catch((error) => {
-  console.error("Error:", error);
-  process.exitCode = 1;
-});
+(async () => {
+  for (let i = 0; i < 40; i++) {
+    await deletePost(i).catch((error) => {
+      console.error("Error:", error);
+      process.exitCode = 1;
+    });
+  }
+})();

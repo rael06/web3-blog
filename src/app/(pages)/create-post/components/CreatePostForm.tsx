@@ -28,9 +28,9 @@ export default function CreatePostForm() {
   const { account, provider } = useWalletContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [title, setTitle] = useState("title");
-  const [body, setBody] = useState("body");
-  const [category, setCategory] = useState("General");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [category, setCategory] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
@@ -100,6 +100,7 @@ export default function CreatePostForm() {
           <Stack spacing={2} alignItems="flex-start">
             <TextField
               label="Title"
+              placeholder="Enter post title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               error={!!errors.title}
@@ -109,6 +110,7 @@ export default function CreatePostForm() {
             />
             <TextField
               label="Body"
+              placeholder="Enter post body..."
               value={body}
               onChange={(e) => setBody(e.target.value)}
               error={!!errors.body}
@@ -120,6 +122,7 @@ export default function CreatePostForm() {
             />
             <TextField
               label="Category"
+              placeholder="Enter post category... (e.g., Business, Technology, Lifestyle, etc.)"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               error={!!errors.category}
