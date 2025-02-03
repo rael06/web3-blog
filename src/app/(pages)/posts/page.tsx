@@ -14,6 +14,8 @@ import Grid from "@mui/material/Grid2";
 import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { formatDate, truncateText } from "@/app/services/formatters";
 
+export const dynamic = "force-dynamic";
+
 const Page: React.FC = async () => {
   const posts = await fetchPosts();
 
