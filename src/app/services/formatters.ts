@@ -10,6 +10,7 @@ export function formatDate(date: Date): string {
     hour: "numeric",
     minute: "numeric",
     second: "numeric",
+    timeZoneName: "longOffset",
   };
   return new Intl.DateTimeFormat("en-US", options).format(date);
 }
