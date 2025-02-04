@@ -75,8 +75,6 @@ Welcome to the Web3 Blog—a decentralized application (dApp) that allows users 
    npm run dev
    ```
 
-```
-
 The application will be available at `http://localhost:3000`.
 
 ## Usage
@@ -111,7 +109,6 @@ This project is licensed under the MIT License.
 
 Built with ❤️ by Rael CALITRO
 
-Github: https://github.com/rael06
-Linkedin: https://www.linkedin.com/in/rael-calitro-4a519a187/
+Github: https://github.com/rael06  
+Linkedin: https://www.linkedin.com/in/rael-calitro-4a519a187/  
 Website: https://rael-calitro.ovh/
-```

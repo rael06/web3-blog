@@ -1,10 +1,10 @@
+import ImageWithFallback from "@/app/components/ImageWithFallback";
 import { formatDate } from "@/app/services/formatters";
 import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { fetchPosts } from "@/usecases/blog/fetchPosts";
 import {
   Card,
   CardActionArea,
-  CardMedia,
   CardContent,
   Typography,
   Box,
@@ -47,14 +47,16 @@ export default async function Page({
           href={`/posts/${post.id}`}
           sx={{ p: 2 }}
         >
-          {post.content.imageCid && (
-            <CardMedia
-              component="img"
-              image={`${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`}
-              alt={post.content.title}
-              sx={{ height: "400px", objectFit: "contain" }}
-            />
-          )}
+          <ImageWithFallback
+            src={
+              post.content.imageCid
+                ? `${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`
+                : "/no-image-fallback.png"
+            }
+            fallbackSrc="/ipfs-in-progress-fallback.png"
+            alt={post.content.title}
+            sx={{ height: "400px", objectFit: "contain" }}
+          />
           <CardContent>
             <Typography gutterBottom variant="h5" component="div">
               {post.content.title}

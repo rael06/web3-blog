@@ -6,13 +6,13 @@ import {
   Card,
   CardActionArea,
   CardContent,
-  CardMedia,
   Container,
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { serverEnvVars } from "@/app/services/serverEnvVars";
 import { formatDate, truncateText } from "@/app/services/formatters";
+import ImageWithFallback from "@/app/components/ImageWithFallback";
 
 export const dynamic = "force-dynamic";
 
@@ -45,16 +45,18 @@ const Page: React.FC = async () => {
           <Card key={post.id} sx={{ m: 2 }}>
             <CardActionArea component={Link} href={`/posts/${post.id}`}>
               <Grid container>
-                {post.content.imageCid && (
-                  <Grid size={2} p={2}>
-                    <CardMedia
-                      component="img"
-                      image={`${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`}
-                      alt={post.content.title}
-                      sx={{ maxHeight: "100%" }}
-                    />
-                  </Grid>
-                )}
+                <Grid size={2} p={2}>
+                  <ImageWithFallback
+                    src={
+                      post.content.imageCid
+                        ? `${serverEnvVars.IPFS_GET_URL}/${post.content.imageCid}`
+                        : "/no-image-fallback.png"
+                    }
+                    fallbackSrc="/ipfs-in-progress-fallback.png"
+                    alt={post.content.title}
+                    sx={{ maxHeight: "100%" }}
+                  />
+                </Grid>
                 <Grid size={8}>
                   <CardContent>
                     <Typography gutterBottom variant="h5" component="div">

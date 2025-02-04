@@ -19,6 +19,9 @@ export default function Home() {
           SepoliaETH. Reading posts is accessible without a wallet connection.
         </Typography>
         <Typography variant="body1">
+          Feel free to create any posts even useless ones just to give it a try!
+        </Typography>
+        <Typography variant="body1">
           If you need SepoliaETH, create a wallet via MetaMask and use the
           faucet:
           <Box component="span" sx={{ ml: 1 }}>
