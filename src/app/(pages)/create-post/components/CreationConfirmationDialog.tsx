@@ -16,7 +16,6 @@ import {
 import { useState } from "react";
 import CreationConfirmedDialog from "./CreationConfirmedDialog";
 import { Warning } from "@mui/icons-material";
-import { LoadingButton } from "@mui/lab";
 
 type Props = {
   isDialogOpen: boolean;
@@ -120,7 +119,7 @@ const CreationConfirmationDialog: React.FC<Props> = ({
           >
             Cancel
           </Button>
-          <LoadingButton
+          <Button
             loading={isSubmitting}
             variant="contained"
             onClick={() => {
@@ -129,7 +128,7 @@ const CreationConfirmationDialog: React.FC<Props> = ({
             color="primary"
           >
             Confirm
-          </LoadingButton>
+          </Button>
         </DialogActions>
         {submissionError && (
           <Alert severity="error" sx={{ mx: 2, mb: 2 }}>

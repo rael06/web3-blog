@@ -1,93 +1,70 @@
 "use client";
 
-import { ethers } from "ethers";
+import "@rainbow-me/rainbowkit/styles.css";
 import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+  getDefaultConfig,
+  RainbowKitProvider,
+  lightTheme,
+} from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserProvider, ethers } from "ethers";
+import { createContext, PropsWithChildren, useContext, useMemo } from "react";
+import { Config, useAccount, useConnectorClient, WagmiProvider } from "wagmi";
+import { localhost, sepolia } from "wagmi/chains";
+import theme from "@/app/theme";
 
-type WalletContextType = {
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID!;
+
+const config = getDefaultConfig({
+  appName: "My Web3 App",
+  projectId,
+  chains: process.env.NEXT_PUBLIC_CHAINS!.split(",").reduce((acc, chain) => {
+    if (chain === "localhost") acc.push(localhost);
+    if (chain === "sepolia") acc.push(sepolia);
+    return acc;
+  }, [] as any) as unknown as Config["chains"],
+});
+
+const queryClient = new QueryClient();
+
+export default function WalletConfigProvider({ children }: PropsWithChildren) {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={lightTheme({
+            accentColor: theme.palette.grey[700],
+          })}
+        >
+          <WalletContextProvider>{children}</WalletContextProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+}
+
+const WalletContext = createContext<{
   account: string | null;
   provider: ethers.BrowserProvider | null;
-  disconnect: () => void;
-  connect: () => void;
-};
+} | null>(null);
 
-const WalletContext = createContext<WalletContextType | null>(null);
-
-export default function WalletContextProvider({ children }: PropsWithChildren) {
-  const [account, setAccount] = useState<string | null>(null);
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-
-  const connect = useCallback(async () => {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        const browserProvider = new ethers.BrowserProvider(window.ethereum);
-        const accounts = await browserProvider.send("eth_requestAccounts", []);
-        const network = await browserProvider.getNetwork();
-
-        const expectedChainId = BigInt(
-          process.env.NEXT_PUBLIC_CHAIN_ID || "1337" // Default to local chain if not specified
-        );
-
-        if (network.chainId !== expectedChainId) {
-          alert("Please switch to the correct network in MetaMask.");
-          return;
-        }
-
-        setProvider(browserProvider);
-        setAccount(accounts[0]);
-
-        localStorage.setItem("autoconnect", "true");
-
-        const handleAccountsChanged = (accounts: string[]) => {
-          setAccount(accounts.length > 0 ? accounts[0] : null);
-        };
-
-        const handleChainChanged = (chainId: string) => {
-          if (BigInt(chainId) !== expectedChainId) {
-            alert("Please switch to the correct network in MetaMask.");
-            disconnect();
-          }
-        };
-
-        window.ethereum.on("accountsChanged", handleAccountsChanged);
-        window.ethereum.on("chainChanged", handleChainChanged);
-
-        return () => {
-          window.ethereum.removeListener(
-            "accountsChanged",
-            handleAccountsChanged
-          );
-          window.ethereum.removeListener("chainChanged", handleChainChanged);
-        };
-      } catch (error) {
-        console.error("Error connecting to MetaMask:", error);
-      }
-    } else {
-      alert("MetaMask is not installed. Please install it to use this app.");
-    }
-  }, []);
-
-  const disconnect = () => {
-    setAccount(null);
-    setProvider(null);
-    localStorage.setItem("autoconnect", "false");
-  };
-
-  useEffect(() => {
-    const autoconnect = localStorage.getItem("autoconnect") === "true";
-    if (autoconnect) {
-      connect();
-    }
-  }, [connect]);
+function WalletContextProvider({ children }: PropsWithChildren) {
+  const { address } = useAccount();
+  const client = useConnectorClient<Config>();
+  const provider = useMemo(() => {
+    if (!client.data) return null;
+    const { chain, transport } = client.data;
+    const network = {
+      chainId: chain.id,
+      name: chain.name,
+      ensAddress: chain.contracts?.ensRegistry?.address,
+    };
+    const provider = new BrowserProvider(transport, network);
+    return provider;
+  }, [client]);
 
   return (
-    <WalletContext.Provider value={{ account, provider, disconnect, connect }}>
+    <WalletContext.Provider value={{ account: address ?? null, provider }}>
       {children}
     </WalletContext.Provider>
   );

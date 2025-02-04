@@ -1,18 +1,15 @@
 "use client";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Link from "next/link";
 import Image from "next/image";
-import { useWalletContext } from "@/app/contexts/WalletContext";
 
 const Header: React.FC = () => {
-  const { account, connect, disconnect } = useWalletContext();
-
   return (
     <AppBar position="static" component={"header"}>
       <Toolbar>
@@ -29,24 +26,7 @@ const Header: React.FC = () => {
         </Box>
 
         <Box>
-          {account ? (
-            <>
-              <Typography
-                variant="body1"
-                component="span"
-                sx={{ marginRight: 2 }}
-              >
-                {`${account.slice(0, 6)}...${account.slice(-4)}`}
-              </Typography>
-              <Button color="inherit" onClick={disconnect}>
-                Disconnect
-              </Button>
-            </>
-          ) : (
-            <Button color="inherit" onClick={connect}>
-              Connect Wallet
-            </Button>
-          )}
+          <ConnectButton />
         </Box>
       </Toolbar>
     </AppBar>

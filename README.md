@@ -68,6 +68,8 @@ Welcome to the Web3 Blog—a decentralized application (dApp) that allows users 
      NEXT_IS_IPFS_PIN_ENABLED=true
      NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL=https://sepolia.etherscan.io
      NEXT_PUBLIC_CHAIN_ID=1337
+     NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_project_id
+     NEXT_PUBLIC_CHAINS=localhost
      ```
 
 5. **Start the Development Server**:
