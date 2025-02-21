@@ -85,6 +85,10 @@ export async function fetchPosts(filter?: {
           isPublished: post.isPublished,
           isDeleted: post.isDeleted,
         });
+      console.info(
+        `${new Date().toISOString()}, Fetch Posts,Post ${post.id}:`,
+        JSON.stringify(post, null, 2)
+      );
     } catch (e) {
       console.error(e);
     }
