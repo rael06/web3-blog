@@ -14,7 +14,7 @@ Welcome to the Web3 Blog—a decentralized application (dApp) that allows users 
 - **Frontend**: Developed using TypeScript with Next.js 15 and Material-UI (MUI) for a dynamic user interface.
 - **Backend**: Smart contracts are written in Solidity and deployed using Hardhat on the Sepolia testnet.
 - **Storage**: Utilizes IPFS with the Kubo client for decentralized storage of metadata.
-- **Deployment**: The application is containerized using Docker and deployed on a Virtual Private Server (VPS) via CI/CD pipelines. The VPS runs an IPFS node.
+- **Deployment**: The application is containerized using Docker and deployed on a Virtual Private Server (VPS) by GitHub Actions. The VPS runs an IPFS node.
 
 ## Getting Started
 
@@ -98,6 +98,25 @@ To create a post, connect your wallet via MetaMask with some SepoliaETH. If you 
 ### Reading Posts
 
 All posts are accessible from the homepage. Click on any post to read its content.
+
+## Deployment
+
+GitHub Actions (`.github/workflows/ci-cd.yml`) lints and type-checks every push and pull request. On `main`, it deploys to the VPS:
+
+- The job sends the commit (`git archive`) and the app settings over SSH with a deploy key that can only run `~/deploy/gh-deploy.sh web3-blog` on the VPS.
+- The VPS keeps only the allowed setting names, adds its fixed infrastructure settings (`HOST`, `PORT`), then builds and runs the hardened container (read-only, no capabilities, localhost port only). If the new version does not answer, the previous settings and image come back.
+
+**Settings and secrets** live in the GitHub environment `production` (Settings → Environments), restricted to `main`:
+
+| Kind | Names |
+| --- | --- |
+| Variables | `NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS`, `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_IPFS_GET_URL`, `NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_CHAINS`, `NEXT_IPFS_API_URL`, `NEXT_IS_IPFS_PIN_ENABLED` |
+| Secrets | `NEXT_BLOCKCHAIN_RPC_URL`; connection: `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER` |
+
+- To apply a change without a commit: Actions → CI/CD → Run workflow on `main`.
+- Variables appear in the public workflow logs; anything sensitive goes in a secret.
+- A new setting needs its line in the workflow and in `~/deploy/web3-blog.allowed` on the VPS.
+- The repository variable `DEPLOY_ENABLED` (`true`/`false`) turns deployments on or off.
 
 ## Contributing
 

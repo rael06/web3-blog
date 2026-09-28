@@ -1,0 +1,70 @@
+# Checks every push and pull request; on main, deploys to the VPS.
+# Settings and secrets live in the GitHub environment `production` (Settings → Environments);
+# « Run workflow » on main redeploys them without a commit. See « Deployment » in the README.
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+
+  deploy:
+    needs: check
+    # DEPLOY_ENABLED is a repository variable: the switch to stop deployments.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - name: Deploy the commit with the production settings
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          # App settings: the VPS keeps only these names (~/deploy/web3-blog.allowed).
+          NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS: ${{ vars.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS }}
+          NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: ${{ vars.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID }}
+          NEXT_PUBLIC_IPFS_GET_URL: ${{ vars.NEXT_PUBLIC_IPFS_GET_URL }}
+          NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL: ${{ vars.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL }}
+          NEXT_PUBLIC_CHAIN_ID: ${{ vars.NEXT_PUBLIC_CHAIN_ID }}
+          NEXT_PUBLIC_CHAINS: ${{ vars.NEXT_PUBLIC_CHAINS }}
+          NEXT_IPFS_API_URL: ${{ vars.NEXT_IPFS_API_URL }}
+          NEXT_IS_IPFS_PIN_ENABLED: ${{ vars.NEXT_IS_IPFS_PIN_ENABLED }}
+          NEXT_BLOCKCHAIN_RPC_URL: ${{ secrets.NEXT_BLOCKCHAIN_RPC_URL }}
+        run: |
+          settings=(NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID NEXT_PUBLIC_IPFS_GET_URL
+            NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL NEXT_PUBLIC_CHAIN_ID NEXT_PUBLIC_CHAINS NEXT_IPFS_API_URL
+            NEXT_IS_IPFS_PIN_ENABLED NEXT_BLOCKCHAIN_RPC_URL)
+          mkdir -p bundle/src
+          # An empty setting would overwrite a working value on the VPS: stop instead.
+          for name in "${settings[@]}"; do
+            [ -n "${!name}" ] || { echo "::error::$name is empty in the environment production"; exit 1; }
+            printf '%s=%s\n' "$name" "${!name}"
+          done > bundle/app.env
+          git archive HEAD | tar -x -C bundle/src
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          tar -cz -C bundle src app.env |
+            ssh -i ~/.ssh/deploy -p "$DEPLOY_PORT" -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"

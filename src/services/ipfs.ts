@@ -3,6 +3,10 @@ import { serverEnvVars } from "@/app/services/serverEnvVars";
 
 const ipfs = create({ url: serverEnvVars.IPFS_API_URL });
 
+// A CID missing from the node would otherwise be searched on the network indefinitely,
+// blocking every page that reads it.
+const READ_TIMEOUT_MS = 3000;
+
 export async function addData(
   data: Record<string, unknown> | Record<string, unknown>[]
 ): Promise<string> {
@@ -15,7 +19,8 @@ export async function getData(cid: string): Promise<unknown> {
   const decoder = new TextDecoder();
   let content = "";
 
-  for await (const chunk of ipfs.cat(cid)) {
+  const signal = AbortSignal.timeout(READ_TIMEOUT_MS);
+  for await (const chunk of ipfs.cat(cid, { signal })) {
     content += decoder.decode(chunk, { stream: true });
   }
 
@@ -37,7 +42,8 @@ export async function addFile(file: Buffer<ArrayBufferLike>): Promise<string> {
 
 export async function getFile(cid: string): Promise<Blob> {
   const chunks: Uint8Array[] = [];
-  for await (const chunk of ipfs.cat(cid)) {
+  const signal = AbortSignal.timeout(READ_TIMEOUT_MS);
+  for await (const chunk of ipfs.cat(cid, { signal })) {
     chunks.push(chunk);
   }
   const blob = new Blob(chunks);
