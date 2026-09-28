@@ -1,0 +1,105 @@
+# Deployed with Kamal 2 by .github/workflows/ci-cd.yml, following the conventions of the platform
+# repository rael06/vps (docs/architecture.md). This repository is public: no value here, only
+# references to the GitHub environment `production`.
+service: web3-blog
+image: web3-blog
+
+servers:
+  web:
+    hosts:
+      - <%= ENV.fetch("VPS_HOST") %>
+    options:
+      read-only: true
+      tmpfs:
+        - /tmp:rw,noexec,nosuid,size=64m
+        - /app/.next/cache:rw,noexec,nosuid,size=256m,uid=1000,gid=1000
+        - /app/.next/server/app/posts:rw,noexec,nosuid,size=64m,uid=1000,gid=1000
+      cap-drop: ALL
+      security-opt: no-new-privileges
+      memory: 768m
+      pids-limit: 256
+
+# Public through the shared tunnel: *.rael-calitro.ovh → cloudflared → kamal-proxy → this app.
+proxy:
+  host: web3-blog.rael-calitro.ovh
+  app_port: 3093
+  healthcheck:
+    path: /
+  # The proxy is shared: identical in every app (nginx holds 80/443; cloudflared reaches kamal-proxy:80).
+  # A new version applies with « Run workflow » + « Reboot kamal-proxy » (a few seconds of outage).
+  run:
+    publish: false
+    version: v0.10.0
+
+env:
+  clear:
+    # Fixed here: tied to the server and to the ipfs accessory below.
+    HOST: 0.0.0.0
+    PORT: "3093"
+    NEXT_IPFS_API_URL: http://ipfs-node:5001
+    # Variables of the GitHub environment `production`.
+    NEXT_IS_IPFS_PIN_ENABLED: <%= ENV.fetch("NEXT_IS_IPFS_PIN_ENABLED").to_json %>
+    NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS: <%= ENV.fetch("NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS").to_json %>
+    NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: <%= ENV.fetch("NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID").to_json %>
+    NEXT_PUBLIC_IPFS_GET_URL: <%= ENV.fetch("NEXT_PUBLIC_IPFS_GET_URL").to_json %>
+    NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL: <%= ENV.fetch("NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL").to_json %>
+    NEXT_PUBLIC_CHAIN_ID: <%= ENV.fetch("NEXT_PUBLIC_CHAIN_ID").to_json %>
+    NEXT_PUBLIC_CHAINS: <%= ENV.fetch("NEXT_PUBLIC_CHAINS").to_json %>
+  secret:
+    - NEXT_BLOCKCHAIN_RPC_URL
+
+accessories:
+  # IPFS node used to pin the posts; its repository stays in /var/www/ipfs on the VPS.
+  # Not updated by `kamal deploy`: `kamal accessory reboot ipfs` applies a change (short outage).
+  ipfs:
+    service: ipfs-node
+    image: ipfs/kubo:v0.43.1
+    host: <%= ENV.fetch("VPS_HOST") %>
+    cmd: daemon --migrate=true --agent-version-suffix=docker
+    volumes:
+      - /var/www/ipfs:/data/ipfs
+    options:
+      # Swarm port open to peers (the only public port of the VPS besides SSH and Cloudflare's
+      # 80/443); API and gateway on localhost only, for administration through an SSH tunnel.
+      publish:
+        - 4001:4001/tcp
+        - 4001:4001/udp
+        - 127.0.0.1:5001:5001
+        - 127.0.0.1:8080:8080
+      memory: 768m
+
+logging:
+  options:
+    max-size: 10m
+    max-file: 3
+
+ssh:
+  user: kamal
+  port: <%= ENV.fetch("VPS_SSH_PORT") %>
+  # The key comes from the ssh-agent loaded by the workflow; the host key must match known_hosts.
+  config: .kamal/ssh_config
+  forward_agent: false
+
+# The image goes from the runner to the VPS through the SSH tunnel: no external registry.
+registry:
+  server: localhost:5555
+
+builder:
+  arch: amd64
+  # NEXT_PUBLIC_* are inlined into the client bundle; the RPC URL is a build secret.
+  args:
+    NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS: <%= ENV.fetch("NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS").to_json %>
+    NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: <%= ENV.fetch("NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID").to_json %>
+    NEXT_PUBLIC_IPFS_GET_URL: <%= ENV.fetch("NEXT_PUBLIC_IPFS_GET_URL").to_json %>
+    NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL: <%= ENV.fetch("NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL").to_json %>
+    NEXT_PUBLIC_CHAIN_ID: <%= ENV.fetch("NEXT_PUBLIC_CHAIN_ID").to_json %>
+    NEXT_PUBLIC_CHAINS: <%= ENV.fetch("NEXT_PUBLIC_CHAINS").to_json %>
+    NEXT_IS_IPFS_PIN_ENABLED: <%= ENV.fetch("NEXT_IS_IPFS_PIN_ENABLED").to_json %>
+  secrets:
+    - NEXT_BLOCKCHAIN_RPC_URL
+
+# Next.js builds its pages at startup of the container: leave room before giving up.
+deploy_timeout: 120
+
+# Old versions kept on the VPS for `kamal rollback <version>`.
+retain_containers: 5
