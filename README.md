@@ -101,22 +101,26 @@ All posts are accessible from the homepage. Click on any post to read its conten
 
 ## Deployment
 
-GitHub Actions (`.github/workflows/ci-cd.yml`) lints and type-checks every push and pull request. On `main`, it deploys to the VPS:
+The blog runs on the VPS at `https://web3-blog.rael-calitro.ovh`, deployed with [Kamal 2](https://kamal-deploy.org) (`config/deploy.yml`). GitHub Actions (`.github/workflows/ci-cd.yml`) lints and type-checks every push and pull request, and on `main`:
 
-- The job sends the commit (`git archive`) and the app settings over SSH with a deploy key that can only run `~/deploy/gh-deploy.sh web3-blog` on the VPS.
-- The VPS keeps only the allowed setting names, adds its fixed infrastructure settings (`HOST`, `PORT`), then builds and runs the hardened container (read-only, no capabilities, localhost port only). If the new version does not answer, the previous settings and image come back.
+- starts the IPFS node accessory `ipfs-node` if it is missing (repository in `/var/www/ipfs` on the VPS, swarm port 4001 public, API and gateway on localhost only);
+- builds the image on the runner (the RPC URL is a build secret, never stored in the image) and sends it to the VPS through the SSH tunnel (Kamal local registry), as the `kamal` user with a restricted key;
+- starts the new container (read-only, no capabilities), waits for `/` to answer, then switches the traffic of `kamal-proxy`: no downtime. If the new container never gets healthy, the previous one keeps serving.
 
-**Settings and secrets** live in the GitHub environment `production` (Settings → Environments), restricted to `main`:
+Traffic path: Cloudflare → tunnel `vps-edge` → `cloudflared` → `kamal-proxy` → blog; the blog pins posts through `http://ipfs-node:5001`.
+
+**Settings and secrets** live in the GitHub environment `production` (Settings → Environments), restricted to `main`; `HOST`, `PORT` and `NEXT_IPFS_API_URL` are fixed in `config/deploy.yml`:
 
 | Kind | Names |
 | --- | --- |
-| Variables | `NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS`, `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_IPFS_GET_URL`, `NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_CHAINS`, `NEXT_IPFS_API_URL`, `NEXT_IS_IPFS_PIN_ENABLED` |
-| Secrets | `NEXT_BLOCKCHAIN_RPC_URL`; connection: `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER` |
+| Variables | `NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS`, `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`, `NEXT_PUBLIC_IPFS_GET_URL`, `NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL`, `NEXT_PUBLIC_CHAIN_ID`, `NEXT_PUBLIC_CHAINS`, `NEXT_IS_IPFS_PIN_ENABLED` |
+| Secrets | `NEXT_BLOCKCHAIN_RPC_URL`; connection: `KAMAL_SSH_KEY`, `VPS_HOST`, `VPS_SSH_PORT`, `VPS_KNOWN_HOSTS` |
 
 - To apply a change without a commit: Actions → CI/CD → Run workflow on `main`.
 - Variables appear in the public workflow logs; anything sensitive goes in a secret.
-- A new setting needs its line in the workflow and in `~/deploy/web3-blog.allowed` on the VPS.
+- A new setting needs its line in `config/deploy.yml` (and `.kamal/secrets` for a secret) and in the deploy job of the workflow.
 - The repository variable `DEPLOY_ENABLED` (`true`/`false`) turns deployments on or off.
+- Rollback: `kamal app containers -q` lists the versions kept on the VPS, `kamal rollback <version>` switches back (see `docs/runbooks/workstation.md` in `rael06/vps`).
 
 ## Contributing
 

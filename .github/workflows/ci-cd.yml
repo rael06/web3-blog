@@ -1,4 +1,4 @@
-# Checks every push and pull request; on main, deploys to the VPS.
+# Checks every push and pull request; on main, deploys to the VPS with Kamal 2.
 # Settings and secrets live in the GitHub environment `production` (Settings → Environments);
 # « Run workflow » on main redeploys them without a commit. See « Deployment » in the README.
 name: CI/CD
@@ -7,6 +7,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      proxy_reboot:
+        description: "Reboot kamal-proxy with the proxy settings of config/deploy.yml instead of deploying (a few seconds of outage)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -33,38 +38,45 @@ jobs:
     concurrency:
       group: deploy-production
       cancel-in-progress: false
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
+      # Public values (also inlined into the client bundle and visible in the public logs).
+      NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS: ${{ vars.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS }}
+      NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: ${{ vars.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID }}
+      NEXT_PUBLIC_IPFS_GET_URL: ${{ vars.NEXT_PUBLIC_IPFS_GET_URL }}
+      NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL: ${{ vars.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL }}
+      NEXT_PUBLIC_CHAIN_ID: ${{ vars.NEXT_PUBLIC_CHAIN_ID }}
+      NEXT_PUBLIC_CHAINS: ${{ vars.NEXT_PUBLIC_CHAINS }}
+      NEXT_IS_IPFS_PIN_ENABLED: ${{ vars.NEXT_IS_IPFS_PIN_ENABLED }}
     steps:
       - uses: actions/checkout@v7
-      - name: Deploy the commit with the production settings
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - run: gem install kamal -v 2.12.0 --no-document
+      - name: Load the deploy key and trust the VPS host key
         env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          # App settings: the VPS keeps only these names (~/deploy/web3-blog.allowed).
-          NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS: ${{ vars.NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS }}
-          NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: ${{ vars.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID }}
-          NEXT_PUBLIC_IPFS_GET_URL: ${{ vars.NEXT_PUBLIC_IPFS_GET_URL }}
-          NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL: ${{ vars.NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL }}
-          NEXT_PUBLIC_CHAIN_ID: ${{ vars.NEXT_PUBLIC_CHAIN_ID }}
-          NEXT_PUBLIC_CHAINS: ${{ vars.NEXT_PUBLIC_CHAINS }}
-          NEXT_IPFS_API_URL: ${{ vars.NEXT_IPFS_API_URL }}
-          NEXT_IS_IPFS_PIN_ENABLED: ${{ vars.NEXT_IS_IPFS_PIN_ENABLED }}
+          KAMAL_SSH_KEY: ${{ secrets.KAMAL_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)" >/dev/null
+          printf '%s\n' "$KAMAL_SSH_KEY" | ssh-add - 2>/dev/null
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+      - name: Start the IPFS node if missing, then build, send and switch to the new version
+        if: ${{ !inputs.proxy_reboot }}
+        env:
           NEXT_BLOCKCHAIN_RPC_URL: ${{ secrets.NEXT_BLOCKCHAIN_RPC_URL }}
         run: |
-          settings=(NEXT_PUBLIC_BLOG_CONTRACT_ADDRESS NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID NEXT_PUBLIC_IPFS_GET_URL
-            NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL NEXT_PUBLIC_CHAIN_ID NEXT_PUBLIC_CHAINS NEXT_IPFS_API_URL
-            NEXT_IS_IPFS_PIN_ENABLED NEXT_BLOCKCHAIN_RPC_URL)
-          mkdir -p bundle/src
-          # An empty setting would overwrite a working value on the VPS: stop instead.
-          for name in "${settings[@]}"; do
-            [ -n "${!name}" ] || { echo "::error::$name is empty in the environment production"; exit 1; }
-            printf '%s=%s\n' "$name" "${!name}"
-          done > bundle/app.env
-          git archive HEAD | tar -x -C bundle/src
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          tar -cz -C bundle src app.env |
-            ssh -i ~/.ssh/deploy -p "$DEPLOY_PORT" -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"
+          kamal accessory boot ipfs
+          kamal deploy
+      - name: Reboot kamal-proxy with the proxy settings of config/deploy.yml
+        if: ${{ inputs.proxy_reboot }}
+        env:
+          NEXT_BLOCKCHAIN_RPC_URL: ${{ secrets.NEXT_BLOCKCHAIN_RPC_URL }}
+        run: kamal proxy reboot -y
+      - name: Release the deploy lock if the run was cancelled
+        if: cancelled()
+        run: kamal lock release

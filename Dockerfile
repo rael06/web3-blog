@@ -18,11 +18,12 @@ ARG NEXT_PUBLIC_BLOCKCHAIN_EXPLORER_URL
 ARG NEXT_PUBLIC_CHAIN_ID
 ARG NEXT_PUBLIC_CHAINS
 ARG NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID
-ARG NEXT_BLOCKCHAIN_RPC_URL
 ARG NEXT_IPFS_API_URL=http://ipfs-node:5001
 ARG NEXT_IS_IPFS_PIN_ENABLED=true
 
-RUN npm run build && npm prune --omit=dev
+# The RPC URL holds a key: a build secret, never written in the image or its history.
+RUN --mount=type=secret,id=NEXT_BLOCKCHAIN_RPC_URL,env=NEXT_BLOCKCHAIN_RPC_URL \
+    npm run build && npm prune --omit=dev
 
 # ---- Runtime: unprivileged user, no build tooling
 FROM node:22-bookworm-slim
